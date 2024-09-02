@@ -22,9 +22,7 @@ func main() {
 		time.Sleep(75 * time.Millisecond)
 	}
 
-	screenWidth, screenHeight := screen.Size()
-	PrintStringCentered(screenHeight/2, screenWidth/2, "Game Over!")
-	PrintStringCentered(screenHeight/2+1, screenWidth/2+1, fmt.Sprint("Your score is: ", score))
+	DrawGameOver()
 	time.Sleep(3 * time.Second)
 	screen.Fini()
 }
@@ -40,6 +38,7 @@ func DrawState() {
 
 	DrawSnake()
 	DrawApple()
+	DrawScore()
 
 	screen.Show()
 }
@@ -168,6 +167,7 @@ func InitScreen() {
 		os.Exit(1)
 	}
 
+	screen.HideCursor()
 	defStyle := tcell.StyleDefault.
 		Background(tcell.ColorBlack).
 		Foreground(tcell.ColorNone)
@@ -230,6 +230,18 @@ func DrawApple() {
 	}
 }
 
+func DrawScore() {
+	row, col := GetGameFrameTopLeft()
+	PrintString(row-2, col, fmt.Sprintf("Score: %d", score))
+}
+
+func DrawGameOver() {
+	screenWidth, screenHeight := screen.Size()
+	PrintStringCentered(screenHeight/2, screenWidth/2, "Game Over!")
+	PrintStringCentered(screenHeight/2+1, screenWidth/2+1, fmt.Sprint("Your score is: ", score))
+	screen.Show()
+}
+
 func DrawInsideGameFrame(row, col, width, height int, ch rune, color ...Color) {
 	rowOffset, colOffset := GetGameFrameTopLeft()
 	DrawFilledRect(row+rowOffset, col+colOffset, width, height, ch, color...)
@@ -282,7 +294,6 @@ func PrintString(row, col int, str string) {
 		screen.SetContent(col, row, c, nil, tcell.StyleDefault)
 		col += 1
 	}
-	screen.Show()
 }
 
 func PrintStringCentered(row, col int, str string) {

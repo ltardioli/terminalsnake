@@ -8,7 +8,7 @@ const SpecialAppleSymbol = '*'
 const GameFrameWidth = 35
 const GameFrameHigh = 15
 const GameFrameSymbol = '║'
-const SpecialAppleChance = 1000 // Chances by frame will be 1/SpecialAppleChance
+const SpecialAppleChance = 500 // Chances by frame will be 1/SpecialAppleChance
 
 var screen tcell.Screen
 var snake *Snake
