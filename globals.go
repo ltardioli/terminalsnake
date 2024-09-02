@@ -16,6 +16,7 @@ var apples []*Apple
 var pointsToClear []*Point
 var isGamePaused bool
 var isGameOver bool
+var restart bool
 var debugLog string
 var score int
 var simultaneousApples int

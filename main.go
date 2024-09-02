@@ -10,20 +10,33 @@ import (
 )
 
 func main() {
-	InitScreen()
-	InitGameState()
-	inputChan := InitUserInput()
+	for {
+		InitScreen()
+		InitGameState()
+		inputChan := InitUserInput()
 
-	for !isGameOver {
-		HandleUserInput(ReadInput(inputChan))
-		UpdateState()
-		DrawState()
+		for !isGameOver {
+			HandleUserInput(ReadInput(inputChan))
+			UpdateState()
+			DrawState()
 
-		time.Sleep(75 * time.Millisecond)
+			time.Sleep(75 * time.Millisecond)
+		}
+
+		DrawGameOver()
+
+		// Wait for the user input after the game is over
+		for isGameOver && !restart {
+			HandleUserInput(ReadInput(inputChan))
+			time.Sleep(75 * time.Millisecond)
+		}
+		// Clean resources
+		screen.Fini()
+
+		if !restart {
+			break
+		}
 	}
-
-	DrawGameOver()
-	time.Sleep(3 * time.Second)
 	screen.Fini()
 }
 
@@ -188,7 +201,7 @@ func InitGameState() {
 		symbol: SnakeSymbol,
 	}
 
-	simultaneousApples = 1
+	simultaneousApples = 1 // The idea is to add more apples at the same time in the future and it will increase and decrease dynamically
 	apples = []*Apple{
 		{
 			point:     &Point{row: 10, col: 10},
@@ -196,6 +209,9 @@ func InitGameState() {
 			isSpecial: false,
 		},
 	}
+	score = 0
+	restart = false
+	isGameOver = false
 }
 
 func InitUserInput() chan string {
@@ -239,6 +255,8 @@ func DrawGameOver() {
 	screenWidth, screenHeight := screen.Size()
 	PrintStringCentered(screenHeight/2, screenWidth/2, "Game Over!")
 	PrintStringCentered(screenHeight/2+1, screenWidth/2+1, fmt.Sprint("Your score is: ", score))
+	PrintStringCentered(screenHeight/2+2, screenWidth/2+2, "Press Esc or 'q' to leave")
+	PrintStringCentered(screenHeight/2+3, screenWidth/2+3, "Press Enter to try again!")
 	screen.Show()
 }
 
@@ -317,7 +335,7 @@ func ReadInput(inputChan chan string) string {
 }
 
 func HandleUserInput(key string) {
-	if key == "Rune[q]" {
+	if key == "Rune[q]" || key == " " || key == "Esc" {
 		screen.Fini()
 		os.Exit(0)
 	} else if key == "Rune[p]" {
@@ -334,5 +352,8 @@ func HandleUserInput(key string) {
 	} else if (key == "Left" || key == "Rune[a]") && snake.velCol != 1 {
 		snake.velCol = -1
 		snake.velRow = 0
+	} else if key == "Enter" {
+		restart = true
 	}
+
 }
