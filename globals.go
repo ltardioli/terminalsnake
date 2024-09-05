@@ -1,6 +1,10 @@
 package main
 
-import "github.com/gdamore/tcell/v2"
+import (
+	"sync"
+
+	"github.com/gdamore/tcell/v2"
+)
 
 const SnakeSymbol = 0x25CF
 const AppleSymbol = 0x25CF
@@ -22,3 +26,5 @@ var restart bool
 var debugLog string
 var score int
 var simultaneousApples int
+var inputs []string
+var mu sync.Mutex

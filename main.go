@@ -14,9 +14,10 @@ func main() {
 		InitScreen()
 		InitGameState()
 		inputChan := InitUserInput()
+		ReadInput(inputChan)
 
 		for !isGameOver {
-			HandleUserInput(ReadInput(inputChan))
+			ProcessInputs()
 			UpdateState()
 			DrawState()
 
@@ -27,7 +28,7 @@ func main() {
 
 		// Wait for the user input after the game is over
 		for isGameOver && !restart {
-			HandleUserInput(ReadInput(inputChan))
+			ProcessInputs()
 			time.Sleep(75 * time.Millisecond)
 		}
 		// Clean resources
@@ -237,20 +238,6 @@ func InitGameState() {
 	isGameOver = false
 }
 
-func InitUserInput() chan string {
-	inputChan := make(chan string)
-	go func() {
-		for {
-			switch ev := screen.PollEvent().(type) {
-			case *tcell.EventKey:
-				//debugLog = ev.Name()
-				inputChan <- ev.Name()
-			}
-		}
-	}()
-	return inputChan
-}
-
 func DrawSnake() {
 	for _, p := range snake.parts {
 		DrawInsideGameFrame(p.row, p.col, 1, 1, snake.symbol)
@@ -349,14 +336,42 @@ func GetGameFrameTopLeft() (int, int) {
 	return (screenHeight - GameFrameHigh) / 2, (screnWidth - GameFrameWidth) / 2
 }
 
-func ReadInput(inputChan chan string) string {
-	var key string
-	select {
-	case key = <-inputChan:
-	default:
-		key = ""
+func InitUserInput() chan string {
+	inputChan := make(chan string) // Non-buffered channel
+	go func() {
+		for {
+
+			switch ev := screen.PollEvent().(type) { // Block waiting for the event
+			case *tcell.EventKey:
+				//debugLog = ev.Name()
+				inputChan <- ev.Name()
+			}
+		}
+	}()
+	return inputChan
+}
+
+func ReadInput(inputChan chan string) {
+	go func() {
+		for {
+			key := <-inputChan // Wait until has something to read. It literally locks while waiting because it is a non-buffered channel
+			mu.Lock()
+			// Void subsequently equals inputs if they are the same. Avoid buffering in case the user holds a button.
+			if len(inputs) == 0 || (len(inputs) > 0 && inputs[len(inputs)-1] != key) {
+				inputs = append(inputs, key)
+			}
+			mu.Unlock()
+		}
+	}()
+}
+
+func ProcessInputs() {
+	mu.Lock()
+	if len(inputs) > 0 {
+		HandleUserInput(inputs[0])
+		inputs = inputs[1:]
 	}
-	return key
+	mu.Unlock()
 }
 
 func HandleUserInput(key string) {
@@ -377,7 +392,7 @@ func HandleUserInput(key string) {
 	} else if (key == "Left" || key == "Rune[a]") && snake.velCol != 1 {
 		snake.velCol = -1
 		snake.velRow = 0
-	} else if key == "Enter" {
+	} else if key == "Enter" && isGameOver {
 		restart = true
 	}
 
