@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 type Point struct {
 	row, col int
 }
@@ -21,13 +23,17 @@ type Apple struct {
 	point     *Point
 	symbol    rune
 	isSpecial bool
+	isTimed   bool
+	now       time.Time
 }
 
-func NewApple(point *Point, symbol rune, isSpecial bool) *Apple {
+func NewApple(point *Point, symbol rune, isSpecial, isTimed bool) *Apple {
 	return &Apple{
 		point:     point,
 		symbol:    symbol,
 		isSpecial: isSpecial,
+		isTimed:   isTimed,
+		now:       time.Now(),
 	}
 }
 

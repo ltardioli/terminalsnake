@@ -81,14 +81,24 @@ func UpdateApples() {
 			apples[n] = apple
 			n++
 		} else {
-			if apple.isSpecial {
+			if apple.isSpecial && !apple.isTimed {
 				score += 2
+			} else if apple.isSpecial && apple.isTimed {
+				score += 5
 			} else {
 				score++
 			}
 		}
 	}
 	apples = apples[:n]
+
+	// Remove timed out apples
+	for i := len(apples) - 1; i >= 0; i-- {
+		if apples[i].isTimed && time.Since(apples[i].now) > AppleTimeout*time.Second {
+			pointsToClear = append(pointsToClear, apples[i].point)
+			apples = append(apples[:i], apples[i+1:]...)
+		}
+	}
 
 	// Check how many simple apples needs to be generated and generate them
 	count := 0
@@ -98,23 +108,36 @@ func UpdateApples() {
 		}
 	}
 	for i := 0; i < simultaneousApples-count; i++ {
-		apples = append(apples, GenerateApple(AppleSymbol, false))
+		apples = append(apples, GenerateApple(AppleSymbol, false, false))
 	}
 
 	// Generate special apples
-	luck := rand.Intn(SpecialAppleChance)
-	if luck == 1 { // At each frame drawed, generate a random number from 0 to SpecialAppleChance. If the generated number is 1 then generate a special apple. Chances by frame will be 1/SpecialAppleChance
-		specialApple := GenerateApple(SpecialAppleSymbol, true)
+	specialApple := GenerateSpecialApple(SpecialAppleSymbol, false, SpecialAppleChance)
+	if specialApple != nil {
 		apples = append(apples, specialApple)
+	}
+
+	// Generate special timed apples
+	specialTimedApple := GenerateSpecialApple(SpecialAppleSymbol, true, SpecialTimedAppleChance)
+	if specialTimedApple != nil {
+		apples = append(apples, specialTimedApple)
 	}
 }
 
-func GenerateApple(symbol rune, isSpecial bool) *Apple {
-	apple := NewApple(NewPoint(rand.Intn(GameFrameHigh), rand.Intn(GameFrameWidth)), symbol, isSpecial)
+func GenerateApple(symbol rune, isSpecial, isTimed bool) *Apple {
+	apple := NewApple(NewPoint(rand.Intn(GameFrameHigh), rand.Intn(GameFrameWidth)), symbol, isSpecial, isTimed)
 	for IsAppleInsideSnake(apple) {
-		apple = NewApple(NewPoint(rand.Intn(GameFrameHigh), rand.Intn(GameFrameWidth)), symbol, isSpecial)
+		apple = NewApple(NewPoint(rand.Intn(GameFrameHigh), rand.Intn(GameFrameWidth)), symbol, isSpecial, isTimed)
 	}
 	return apple
+}
+
+func GenerateSpecialApple(symbol rune, timed bool, chance int) *Apple {
+	luck := rand.Intn(chance)
+	if luck == 1 { // At each frame drawed, generate a random number from 0 to SpecialAppleChance. If the generated number is 1 then generate a special apple. Chances by frame will be 1/SpecialAppleChance
+		return GenerateApple(symbol, true, timed)
+	}
+	return nil
 }
 
 func IsAppleInsideSnake(apple *Apple) bool {
@@ -215,7 +238,7 @@ func InitGameState() {
 }
 
 func InitUserInput() chan string {
-	inputChan := make(chan string, 10)
+	inputChan := make(chan string)
 	go func() {
 		for {
 			switch ev := screen.PollEvent().(type) {
@@ -238,8 +261,10 @@ func DrawSnake() {
 func DrawApple() {
 	for _, apple := range apples {
 		color := Red
-		if apple.isSpecial {
+		if apple.isSpecial && !apple.isTimed {
 			color = Green
+		} else if apple.isSpecial && apple.isTimed {
+			color = Yellow
 		}
 		DrawInsideGameFrame(apple.point.row, apple.point.col, 1, 1, apple.symbol, color)
 		pointsToClear = append(pointsToClear, apple.point)
