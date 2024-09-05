@@ -17,6 +17,5 @@ One point for each apple eaten. Two point for each special (green) apple eaten.
 
 # TODO
 - Create a leader board
-- Create a timed special apple
 - Add a menu before the game start and after the game end
 - Think in more TODOS lol
