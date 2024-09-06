@@ -13,8 +13,7 @@ func main() {
 	for {
 		InitScreen()
 		InitGameState()
-		inputChan := InitUserInput()
-		ReadInput(inputChan)
+		InitUserInput()
 
 		for !isGameOver {
 			ProcessInputs()
@@ -336,31 +335,20 @@ func GetGameFrameTopLeft() (int, int) {
 	return (screenHeight - GameFrameHigh) / 2, (screnWidth - GameFrameWidth) / 2
 }
 
-func InitUserInput() chan string {
-	inputChan := make(chan string) // Non-buffered channel
+func InitUserInput() {
 	go func() {
 		for {
-
 			switch ev := screen.PollEvent().(type) { // Block waiting for the event
 			case *tcell.EventKey:
 				//debugLog = ev.Name()
-				inputChan <- ev.Name()
+				key := ev.Name()
+				mu.Lock()
+				// Avoid subsequently equals inputs if they are the same. Avoid buffering in case the user holds a button.
+				if len(inputs) == 0 || (len(inputs) > 0 && inputs[len(inputs)-1] != key) {
+					inputs = append(inputs, key)
+				}
+				mu.Unlock()
 			}
-		}
-	}()
-	return inputChan
-}
-
-func ReadInput(inputChan chan string) {
-	go func() {
-		for {
-			key := <-inputChan // Wait until has something to read. It literally locks while waiting because it is a non-buffered channel
-			mu.Lock()
-			// Void subsequently equals inputs if they are the same. Avoid buffering in case the user holds a button.
-			if len(inputs) == 0 || (len(inputs) > 0 && inputs[len(inputs)-1] != key) {
-				inputs = append(inputs, key)
-			}
-			mu.Unlock()
 		}
 	}()
 }
